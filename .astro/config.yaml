@@ -1,0 +1,6 @@
+postgres:
+  port: "5438"
+project:
+  name: astronomer-dev
+webserver:
+  port: "8088"

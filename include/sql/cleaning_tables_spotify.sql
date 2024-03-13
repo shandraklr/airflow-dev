@@ -1,0 +1,1 @@
+truncate table dl.spotify_long_hits;
