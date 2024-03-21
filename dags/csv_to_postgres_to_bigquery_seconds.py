@@ -9,12 +9,13 @@ from airflow import DAG
 from airflow.models import XCom
 from airflow.utils.db import provide_session
 from airflow.operators.empty import EmptyOperator
+from airflow.operators.python import PythonOperator
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.providers.google.cloud.transfers.postgres_to_gcs import PostgresToGCSOperator
 from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
 
 doc_md = """
-load data from local csv to potgresql and load to bigquery
+load data from local csv >> potgresql >> gcs >> bigquery
 """
 
 MY_BUCKET = "slr-bucket-terraform"
@@ -90,6 +91,14 @@ with DAG(
         cluster_fields = "artists"
     )
 
+    cleaning_cache = python_task = PythonOperator(
+        task_id = "cleaning_cache",
+        python_callable = cleanup_xcom,
+        provide_context = True
+    )
+
+    aql.cleanup()
+
     end = EmptyOperator(task_id='end')
 
-    start >> cleaning_tables >> postgres_load >> gcs_load >> bq_load >> end
+    start >> cleaning_tables >> postgres_load >> gcs_load >> bq_load >> cleaning_cache >> end

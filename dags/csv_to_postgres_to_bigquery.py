@@ -14,7 +14,7 @@ from airflow.providers.google.cloud.transfers.postgres_to_gcs import PostgresToG
 from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
 
 doc_md = """
-load data from local csv to potgresql and load to bigquery
+load data from local csv >> potgresql >> gcs >> bigquery
 """
 
 MY_BUCKET = "slr-bucket-terraform"
@@ -96,6 +96,12 @@ with DAG(
         cluster_fields = "artists"
     )
 
+    cleaning_cache = python_task = PythonOperator(
+        task_id = "cleaning_cache",
+        python_callable = cleanup_xcom,
+        provide_context = True
+    )
+
     end = EmptyOperator(task_id='end')
 
-    start >> read_and_load_dataset() >> gcs_load >> bq_load >> end
+    start >> read_and_load_dataset() >> gcs_load >> bq_load >> cleaning_cache >> end
